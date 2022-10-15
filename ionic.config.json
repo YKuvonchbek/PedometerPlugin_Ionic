@@ -1,5 +1,7 @@
 {
   "name": "testApp",
-  "integrations": {},
+  "integrations": {
+    "capacitor": {}
+  },
   "type": "angular"
 }
