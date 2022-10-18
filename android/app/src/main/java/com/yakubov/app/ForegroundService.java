@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.yakubov.app.utils.SharedPrefManager;
 import com.getcapacitor.JSObject;
@@ -16,9 +17,11 @@ import com.getcapacitor.JSObject;
 import org.jetbrains.annotations.Nullable;
 import org.json.JSONException;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -58,13 +61,20 @@ public class ForegroundService extends Service {
 
       ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-      Long midnight= LocalDateTime.now().until(LocalDate.now().plusDays(1).atStartOfDay(), ChronoUnit.MINUTES);
+      final Long initialDelay = LocalDateTime.now().until(LocalDate.now().plusDays(1).atTime(0, 0), ChronoUnit.MINUTES);
+      Long delayTime;
+      if (initialDelay > TimeUnit.DAYS.toMinutes(1)) {
+        delayTime = LocalDateTime.now().until(LocalDate.now().atTime(0, 0), ChronoUnit.MINUTES);
+      } else {
+        delayTime = initialDelay;
+      }
+
       Runnable runnable = () -> {
         plugin.reset();
-        plugin.start();
+        Log.e("testtest_reset", "called");
       };
 
-      scheduler.scheduleAtFixedRate(runnable, midnight, TimeUnit.DAYS.toMinutes(1), TimeUnit.MINUTES);
+      scheduler.scheduleAtFixedRate(runnable, delayTime, TimeUnit.DAYS.toMinutes(1), TimeUnit.MINUTES);
     }
 
     public static void startService(Context context, String message) {
