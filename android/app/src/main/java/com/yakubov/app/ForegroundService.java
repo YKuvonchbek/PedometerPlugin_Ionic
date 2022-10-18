@@ -1,5 +1,6 @@
-package com.example.app;
+package com.yakubov.app;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -10,13 +11,16 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
-import androidx.annotation.RequiresApi;
-
-import com.getcapacitor.PluginCall;
+import com.yakubov.app.utils.AlarmReceiver;
+import com.yakubov.app.utils.SharedPrefManager;
+import com.getcapacitor.JSObject;
 
 import org.jetbrains.annotations.Nullable;
+import org.json.JSONException;
 
+import java.util.Calendar;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -26,37 +30,35 @@ public class ForegroundService extends Service {
     private static final int FOREGROUND_ID = 945;
 
     private NotificationManager notificationManager;
-    private PedometerPluginImpl plugin;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        SharedPrefManager sharedPrefManager = new SharedPrefManager(this);
+
+        PedometerPluginImpl plugin = PedometerPluginImpl.getInstance();
+        plugin.initialize(this);
+        plugin.start();
+
+        plugin.listenerForService = new PedometerPluginListener() {
+          @Override
+          public void onReceived(JSObject data) {
+            try {
+              int steps = ((Double) data.get("numberOfSteps")).intValue();
+              sharedPrefManager.saveSteps(steps);
+              sharedPrefManager.save(String.valueOf(data));
+              updateContent(String.valueOf(steps));
+            } catch (JSONException e) {
+              e.printStackTrace();
+            }
+
+          }
+        };
 
 
-//      Timer timer = new Timer();
-//
-//      TimerTask t = new TimerTask() {
-//        int counts = 0;
-//        @Override
-//        public void run() {
-//
-//          counts++;
-//          updateContent(String.valueOf(counts));
-//          System.out.println("1");
-//        }
-//      };
-//      timer.scheduleAtFixedRate(t,1000,1000);
-
-      plugin = new PedometerPluginImpl(this);
-      plugin.start();
-      plugin.listener = new PedometerPluginListener() {
-        @Override
-        public void onReceivedStep(String count) {
-          updateContent(count);
-        }
-      };
+        createAlarm();
     }
 
     public static void startService(Context context, String message) {
@@ -74,8 +76,33 @@ public class ForegroundService extends Service {
     context.stopService(intent);
   }
 
+  public void createAlarm() {
+    //System request code
+    int DATA_FETCHER_RC = 123;
+    //Create an alarm manager
+    AlarmManager mAlarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+
+    //Create the time of day you would like it to go off. Use a calendar
+    Calendar calendar = Calendar.getInstance();
+    calendar.set(Calendar.HOUR_OF_DAY, 0);
+    calendar.set(Calendar.MINUTE, 0);
+
+    //Create an intent that points to the receiver. The system will notify the app about the current time, and send a broadcast to the app
+    Intent intent = new Intent(this, AlarmReceiver.class);
+    PendingIntent pendingIntent = PendingIntent.getBroadcast(this, DATA_FETCHER_RC,intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
+
+    //initialize the alarm by using inexactrepeating. This allows the system to scheduler your alarm at the most efficient time around your
+    //set time, it is usually a few seconds off your requested time.
+    // you can also use setExact however this is not recommended. Use this only if it must be done then.
+
+    //Also set the interval using the AlarmManager constants
+    mAlarmManager.setInexactRepeating(AlarmManager.RTC,calendar.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
+
+  }
+
   @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+
       String input = intent.getStringExtra("numberOfSteps");
         createNotificationChannel();
 
