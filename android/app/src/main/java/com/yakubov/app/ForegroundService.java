@@ -5,12 +5,14 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.yakubov.app.utils.DayChangedBroadcastReceiver;
 import com.yakubov.app.utils.SharedPrefManager;
 import com.getcapacitor.JSObject;
 
@@ -33,6 +35,14 @@ public class ForegroundService extends Service {
 
     private NotificationManager notificationManager;
 
+  PedometerPluginImpl plugin;
+  private final DayChangedBroadcastReceiver m_timeChangedReceiver = new DayChangedBroadcastReceiver() {
+    @Override
+    public void onDayChanged() {
+      plugin.reset();
+      Log.e("testtest", "on day changed");
+    }
+  };
     @Override
     public void onCreate() {
         super.onCreate();
@@ -40,7 +50,7 @@ public class ForegroundService extends Service {
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         SharedPrefManager sharedPrefManager = new SharedPrefManager(this);
 
-        PedometerPluginImpl plugin = PedometerPluginImpl.getInstance();
+        plugin = PedometerPluginImpl.getInstance();
         plugin.initialize(this);
         plugin.start();
 
@@ -59,22 +69,24 @@ public class ForegroundService extends Service {
           }
         };
 
-      ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+//      ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+//
+//      final Long initialDelay = LocalDateTime.now().until(LocalDate.now().plusDays(1).atTime(0, 0), ChronoUnit.MINUTES);
+//      Long delayTime;
+//      if (initialDelay > TimeUnit.DAYS.toMinutes(1)) {
+//        delayTime = LocalDateTime.now().until(LocalDate.now().atTime(0, 0), ChronoUnit.MINUTES);
+//      } else {
+//        delayTime = initialDelay;
+//      }
+//
+//      Runnable runnable = () -> {
+//        plugin.reset();
+//        Log.e("testtest_reset", "called");
+//      };
+//
+//      scheduler.scheduleAtFixedRate(runnable, delayTime, TimeUnit.DAYS.toMinutes(1), TimeUnit.MINUTES);
 
-      final Long initialDelay = LocalDateTime.now().until(LocalDate.now().plusDays(1).atTime(0, 0), ChronoUnit.MINUTES);
-      Long delayTime;
-      if (initialDelay > TimeUnit.DAYS.toMinutes(1)) {
-        delayTime = LocalDateTime.now().until(LocalDate.now().atTime(0, 0), ChronoUnit.MINUTES);
-      } else {
-        delayTime = initialDelay;
-      }
-
-      Runnable runnable = () -> {
-        plugin.reset();
-        Log.e("testtest_reset", "called");
-      };
-
-      scheduler.scheduleAtFixedRate(runnable, delayTime, TimeUnit.DAYS.toMinutes(1), TimeUnit.MINUTES);
+      registerReceiver(m_timeChangedReceiver, DayChangedBroadcastReceiver.getIntentFilter());
     }
 
     public static void startService(Context context, String message) {
@@ -150,6 +162,7 @@ public class ForegroundService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        unregisterReceiver(m_timeChangedReceiver);
     }
 
     @Nullable
