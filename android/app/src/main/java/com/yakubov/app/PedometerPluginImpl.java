@@ -189,7 +189,7 @@ public class PedometerPluginImpl implements SensorEventListener {
         this.status = status;
     }
 
-    private JSObject getStepsJSON(float steps) {
+    public JSObject getStepsJSON(float steps) {
       JSObject r = new JSObject();
       r.put("startDate", this.starttimestamp);
       r.put("endDate", System.currentTimeMillis());

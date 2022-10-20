@@ -50,14 +50,6 @@ public class PedometerPlugin extends Plugin {
         }
       });
 
-    SharedPrefManager manager = new SharedPrefManager(getContext());
-    String savedData = manager.getData();
-    Log.e("testtest-onLoad", savedData);
-
-    if (savedData != null) {
-      bridge.triggerJSEvent("stepEvent", "window", String.valueOf(savedData));
-    }
-
     plugin = PedometerPluginImpl.getInstance();
     plugin.initialize(getContext());
     plugin.listener = new PedometerPluginListener() {
@@ -77,6 +69,22 @@ public class PedometerPlugin extends Plugin {
   @Override
   protected void handleOnDestroy() {
     super.handleOnDestroy();
+  }
+
+  @PluginMethod
+  public void getSavedData(PluginCall call) {
+    SharedPrefManager manager = new SharedPrefManager(getContext());
+    String savedData = manager.getData();
+    if (savedData == null) {
+      JSObject data = plugin.getStepsJSON(0);
+      call.resolve(data);
+      return;
+    }
+    try {
+      call.resolve(new JSObject(savedData));
+    } catch (JSONException e) {
+      e.printStackTrace();
+    }
   }
 
   @PluginMethod

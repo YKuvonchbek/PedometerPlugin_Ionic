@@ -12,6 +12,9 @@ import android.os.Build;
 import android.os.IBinder;
 import android.util.Log;
 
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+
 import com.yakubov.app.utils.DayChangedBroadcastReceiver;
 import com.yakubov.app.utils.SharedPrefManager;
 import com.getcapacitor.JSObject;
@@ -93,7 +96,7 @@ public class ForegroundService extends Service {
       Intent intent = new Intent(context, ForegroundService.class);
       intent.putExtra("numberOfSteps", message);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        context.startForegroundService(intent);
+        ContextCompat.startForegroundService(context, intent);
       } else {
         context.startService(intent);
       }
@@ -114,18 +117,19 @@ public class ForegroundService extends Service {
         PendingIntent pendingIntent = PendingIntent.getActivity(this,
           0, notificationIntent, PendingIntent.FLAG_IMMUTABLE);
 
-    Notification notification = null;
     if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-      notification = new Notification.Builder(this, CHANNEL_ID)
+      Notification.Builder notificationBuilder = new Notification.Builder(this, CHANNEL_ID)
         .setContentTitle("Counting steps")
         .setContentText(input)
         .setSmallIcon(R.drawable.ic_baseline_directions_walk_24)
-        .setContentIntent(pendingIntent)
-        .build();
+        .setContentIntent(pendingIntent);
+
+      if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+        notificationBuilder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+      }
+
+      startForeground(FOREGROUND_ID, notificationBuilder.build());
     }
-
-    startForeground(FOREGROUND_ID, notification);
-
         //do heavy work on a background thread
         //stopSelf();
         return START_STICKY;
@@ -148,14 +152,17 @@ public class ForegroundService extends Service {
         0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
 
       if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-        Notification notification = new Notification.Builder(this, CHANNEL_ID)
+        Notification.Builder notificationBuilder = new Notification.Builder(this, CHANNEL_ID)
           .setContentTitle("Counting steps")
           .setContentText(message)
           .setSmallIcon(R.drawable.ic_baseline_directions_walk_24)
-          .setContentIntent(pendingIntent)
-          .build();
+          .setContentIntent(pendingIntent);
 
-        notificationManager.notify(FOREGROUND_ID, notification);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+          notificationBuilder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE);
+        }
+
+        notificationManager.notify(FOREGROUND_ID, notificationBuilder.build());
       }
     }
 

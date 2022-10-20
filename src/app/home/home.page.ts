@@ -30,12 +30,21 @@ export class HomePage {
   }
   
   ngOnInit() {
+    
+    this.getSavedData();
+    
     window.addEventListener('stepEvent', (event: any) => {
       console.log(event.numberOfSteps);
       this.steps = event.numberOfSteps;
       this.ref.detectChanges();
     });
 }  
+
+  async getSavedData() {
+    let savedData = await PedometerPlugin.getSavedData();
+    this.steps = savedData["numberOfSteps"]
+    this.ref.detectChanges();
+  }
   
   async getSteps() {
     PedometerPlugin.start();
