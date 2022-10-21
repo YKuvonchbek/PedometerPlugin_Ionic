@@ -88,6 +88,14 @@ public class PedometerPlugin extends Plugin {
   }
 
   @PluginMethod
+  public void setData(PluginCall call) {
+    SharedPrefManager manager = new SharedPrefManager(getContext());
+    int stepsFromIonic = call.getInt("numberOfSteps");
+    manager.saveSteps(stepsFromIonic);
+    plugin.lastNumberOfSteps = stepsFromIonic;
+  }
+
+  @PluginMethod
   public void start(PluginCall call) {
     call.resolve();
     SharedPrefManager sharedPrefManager = new SharedPrefManager(getContext());

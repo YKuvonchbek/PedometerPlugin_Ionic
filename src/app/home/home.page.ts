@@ -31,8 +31,11 @@ export class HomePage {
   
   ngOnInit() {
     
+    let numberOfStepsFromServer = 544;
+    PedometerPlugin.setData( { numberOfSteps: numberOfStepsFromServer } )
+
     this.getSavedData();
-    
+
     window.addEventListener('stepEvent', (event: any) => {
       console.log(event.numberOfSteps);
       this.steps = event.numberOfSteps;

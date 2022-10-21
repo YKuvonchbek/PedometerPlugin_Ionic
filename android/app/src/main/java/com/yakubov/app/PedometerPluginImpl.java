@@ -46,7 +46,7 @@ public class PedometerPluginImpl implements SensorEventListener {
 
     SharedPrefManager sharedPrefManager;
 
-    private int lastNumberOfSteps;
+    public int lastNumberOfSteps;
 
     private PedometerPluginImpl() {
       this.starttimestamp = 0;
